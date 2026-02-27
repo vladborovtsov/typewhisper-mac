@@ -168,6 +168,7 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           DOWNLOAD_URL="https://github.com/TypeWhisper/typewhisper-mac/releases/download/${TAG}/${TARGET}.zip"
 
+          git fetch origin gh-pages
           git worktree add -B gh-pages /tmp/gh-pages origin/gh-pages
 
           update_registry() {
