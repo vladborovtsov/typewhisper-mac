@@ -340,32 +340,31 @@ enum SpeechModelState: Equatable {
 @available(macOS 26, *)
 private struct SpeechAnalyzerSettingsView: View {
     let plugin: SpeechAnalyzerPlugin
+    @State private var models: [SpeechModelDef] = []
     @State private var modelState: SpeechModelState = .notLoaded
+    @State private var loadedModelId: String?
     @State private var searchText = ""
 
     private var filteredModels: [SpeechModelDef] {
         if searchText.isEmpty {
-            return plugin.cachedModels
+            return models
         }
-        return plugin.cachedModels.filter {
+        return models.filter {
             $0.displayName.localizedCaseInsensitiveContains(searchText)
         }
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Apple Speech")
-                .font(.headline)
-
             Text("On-device speech recognition powered by Apple's Speech framework. System-managed models, streaming support.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
-            if case .ready = modelState, let loadedId = plugin.loadedModelId {
+            if case .ready = modelState, let loadedId = loadedModelId {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
-                    let modelName = plugin.cachedModels.first(where: { $0.id == loadedId })?.displayName ?? loadedId
+                    let modelName = models.first(where: { $0.id == loadedId })?.displayName ?? loadedId
                     Text("Active: \(modelName)")
                         .font(.callout)
 
@@ -373,7 +372,7 @@ private struct SpeechAnalyzerSettingsView: View {
 
                     Button("Unload") {
                         plugin.unloadModel()
-                        modelState = plugin.modelState
+                        syncState()
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -406,19 +405,39 @@ private struct SpeechAnalyzerSettingsView: View {
             TextField("Search languages...", text: $searchText)
                 .textFieldStyle(.roundedBorder)
 
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 4) {
-                    ForEach(filteredModels) { modelDef in
-                        languageRow(modelDef)
+            if models.isEmpty {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Loading available languages...")
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 4) {
+                        ForEach(filteredModels) { modelDef in
+                            languageRow(modelDef)
+                        }
                     }
                 }
+                .frame(maxHeight: 300)
             }
-            .frame(maxHeight: 300)
         }
         .padding()
-        .onAppear {
-            modelState = plugin.modelState
+        .task {
+            if plugin.cachedModels.isEmpty {
+                await plugin.populateModels()
+            }
+            syncState()
         }
+    }
+
+    private func syncState() {
+        models = plugin.cachedModels
+        modelState = plugin.modelState
+        loadedModelId = plugin.loadedModelId
     }
 
     @ViewBuilder
@@ -429,7 +448,7 @@ private struct SpeechAnalyzerSettingsView: View {
 
             Spacer()
 
-            if plugin.loadedModelId == modelDef.id {
+            if loadedModelId == modelDef.id {
                 Image(systemName: "checkmark")
                     .foregroundStyle(.green)
                     .font(.caption)
@@ -437,7 +456,7 @@ private struct SpeechAnalyzerSettingsView: View {
                 Button("Select") {
                     Task {
                         await plugin.loadModel(modelDef)
-                        modelState = plugin.modelState
+                        syncState()
                     }
                 }
                 .buttonStyle(.bordered)
