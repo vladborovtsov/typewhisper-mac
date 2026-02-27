@@ -28,6 +28,7 @@ jobs:
           case "$PLUGIN_NAME" in
             qwen3) TARGET="Qwen3Plugin" ;;
             linear) TARGET="LinearPlugin" ;;
+            webhook) TARGET="WebhookPlugin" ;;
             *) echo "Unknown plugin: $PLUGIN_NAME" && exit 1 ;;
           esac
           echo "TARGET=$TARGET" >> $GITHUB_ENV
