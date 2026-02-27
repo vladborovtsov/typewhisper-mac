@@ -390,7 +390,9 @@ private struct WhisperKitSettingsView: View {
     @State private var modelState: WhisperModelState = .notLoaded
     @State private var downloadProgress: Double = 0
     @State private var activeModelId: String?
-    @State private var pollTimer: Timer?
+    @State private var isPolling = false
+
+    private let pollTimer = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -426,34 +428,21 @@ private struct WhisperKitSettingsView: View {
         }
         .padding()
         .onAppear {
-            syncState()
+            modelState = plugin.modelState
+            downloadProgress = plugin.downloadProgress
+            activeModelId = plugin._selectedModelId
         }
-        .onDisappear {
-            stopPolling()
-        }
-    }
-
-    private func syncState() {
-        modelState = plugin.modelState
-        downloadProgress = plugin.downloadProgress
-        activeModelId = plugin._selectedModelId
-    }
-
-    private func startPolling() {
-        stopPolling()
-        pollTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { _ in
-            DispatchQueue.main.async {
-                syncState()
-                if case .ready = plugin.modelState { stopPolling() }
-                else if case .error = plugin.modelState { stopPolling() }
-                else if case .notLoaded = plugin.modelState { stopPolling() }
+        .onReceive(pollTimer) { _ in
+            guard isPolling else { return }
+            downloadProgress = plugin.downloadProgress
+            let pluginState = plugin.modelState
+            if pluginState != .notLoaded {
+                modelState = pluginState
+                activeModelId = plugin._selectedModelId ?? activeModelId
             }
+            if case .ready = pluginState { isPolling = false }
+            else if case .error = pluginState { isPolling = false }
         }
-    }
-
-    private func stopPolling() {
-        pollTimer?.invalidate()
-        pollTimer = nil
     }
 
     @ViewBuilder
@@ -518,11 +507,13 @@ private struct WhisperKitSettingsView: View {
                 activeModelId = modelDef.id
                 modelState = .downloading
                 downloadProgress = 0.05
-                startPolling()
+                isPolling = true
                 Task {
                     await plugin.loadModel(modelDef)
-                    stopPolling()
-                    syncState()
+                    isPolling = false
+                    modelState = plugin.modelState
+                    downloadProgress = plugin.downloadProgress
+                    activeModelId = plugin._selectedModelId
                 }
             }
             .buttonStyle(.borderedProminent)
