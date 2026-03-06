@@ -205,6 +205,7 @@ final class ModelManagerService: ObservableObject {
                 translate: task == .translate,
                 prompt: prompt
             )
+            let _ = onProgress(result.text)
         }
 
         let processingTime = CFAbsoluteTimeGetCurrent() - startTime

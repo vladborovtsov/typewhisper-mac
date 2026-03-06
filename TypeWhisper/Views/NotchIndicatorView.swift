@@ -35,9 +35,10 @@ struct NotchIndicatorView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Three-zone status bar
+            // Three-zone status bar - fixed width so it doesn't shift on expansion
             statusBar
-                .frame(height: geometry.notchHeight)
+                .frame(width: closedWidth, height: geometry.notchHeight)
+                .frame(maxWidth: .infinity)
 
             // Expandable partial text area
             if viewModel.state == .recording {

@@ -36,15 +36,16 @@ final class StreamingHandler {
     ) {
         let providerId = engineOverrideId ?? selectedProviderId
         guard let providerId,
-              let plugin = PluginManager.shared.transcriptionEngine(for: providerId),
-              plugin.supportsStreaming else { return }
+              let plugin = PluginManager.shared.transcriptionEngine(for: providerId) else { return }
+
+        let pollInterval: Double = plugin.supportsStreaming ? 1.5 : 3.0
 
         onStreamingStateChange?(true)
         confirmedStreamingText = ""
         let streamPrompt = dictionaryService.getTermsForPrompt()
         streamingTask = Task { [weak self] in
             guard let self else { return }
-            try? await Task.sleep(for: .seconds(1.5))
+            try? await Task.sleep(for: .seconds(pollInterval))
 
             while !Task.isCancelled, stateCheck() == .recording {
                 let buffer = self.audioRecordingService.getRecentBuffer(maxDuration: 3600)
@@ -80,7 +81,7 @@ final class StreamingHandler {
                     }
                 }
 
-                try? await Task.sleep(for: .seconds(1.5))
+                try? await Task.sleep(for: .seconds(pollInterval))
             }
         }
     }
