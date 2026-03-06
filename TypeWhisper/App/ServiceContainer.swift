@@ -24,6 +24,7 @@ final class ServiceContainer: ObservableObject {
     let promptProcessingService: PromptProcessingService
     let pluginManager: PluginManager
     let pluginRegistryService: PluginRegistryService
+    let widgetDataService: WidgetDataService
 
     // HTTP API
     let httpServer: HTTPServer
@@ -60,6 +61,7 @@ final class ServiceContainer: ObservableObject {
         promptProcessingService = PromptProcessingService()
         pluginManager = PluginManager()
         pluginRegistryService = PluginRegistryService()
+        widgetDataService = WidgetDataService(historyService: historyService)
 
         // ViewModels (created before HTTP API so DictationViewModel is available)
         fileTranscriptionViewModel = FileTranscriptionViewModel(
