@@ -79,6 +79,18 @@ Speech-to-text and AI text processing for macOS. Transcribe audio using on-devic
 - **Multilingual UI** - English and German
 - **Launch at Login** - Start automatically with macOS
 
+## Install
+
+### Homebrew
+
+```bash
+brew install --cask typewhisper/tap/typewhisper
+```
+
+### Direct Download
+
+Download the latest DMG from [GitHub Releases](https://github.com/TypeWhisper/typewhisper-mac/releases/latest).
+
 ## System Requirements
 
 - macOS 15.0 (Sequoia) or later
