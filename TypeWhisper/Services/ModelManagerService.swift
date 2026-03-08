@@ -255,15 +255,18 @@ final class ModelManagerService: ObservableObject {
         let seconds = autoUnloadSeconds
         guard seconds != 0 else { return }
 
-        if seconds == -1 {
-            performAutoUnload()
-            return
-        }
-
         let workItem = DispatchWorkItem { [weak self] in
             self?.performAutoUnload()
         }
         autoUnloadWorkItem = workItem
+
+        if seconds == -1 {
+            // Defer to next run loop iteration so the transcription call stack fully unwinds
+            // before releasing the model (avoids EXC_BAD_ACCESS from MLX cleanup)
+            DispatchQueue.main.async(execute: workItem)
+            return
+        }
+
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(seconds), execute: workItem)
     }
 
