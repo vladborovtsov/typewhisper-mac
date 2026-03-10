@@ -98,10 +98,8 @@ class OverlayIndicatorPanel: NSPanel {
         }
 
         let screenFrame = screen.frame
-        let visibleFrame = screen.visibleFrame // Excludes dock
-
-        let dockHeight = screenFrame.height - visibleFrame.height - visibleFrame.origin.y + screenFrame.origin.y
-        let bottomOffset: CGFloat = max(dockHeight + 24, 24)
+        // Position the overlay roughly 10% from the bottom of the screen
+        let bottomOffset: CGFloat = screenFrame.height * 0.10
 
         let x = screenFrame.midX - Self.panelWidth / 2
         let y = screenFrame.origin.y + bottomOffset
