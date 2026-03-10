@@ -54,8 +54,8 @@ final class DictationViewModel: ObservableObject {
     @Published var activeAppIcon: NSImage?
     private var actionDisplayDuration: TimeInterval = 3.5
 
-    @Published var overlayPosition: OverlayPosition {
-        didSet { UserDefaults.standard.set(overlayPosition.rawValue, forKey: UserDefaultsKeys.overlayPosition) }
+    @Published var indicatorStyle: IndicatorStyle {
+        didSet { UserDefaults.standard.set(indicatorStyle.rawValue, forKey: UserDefaultsKeys.indicatorStyle) }
     }
 
     @Published var notchIndicatorVisibility: NotchIndicatorVisibility {
@@ -72,6 +72,10 @@ final class DictationViewModel: ObservableObject {
 
     @Published var notchIndicatorDisplay: NotchIndicatorDisplay {
         didSet { UserDefaults.standard.set(notchIndicatorDisplay.rawValue, forKey: UserDefaultsKeys.notchIndicatorDisplay) }
+    }
+
+    @Published var overlayPosition: OverlayPosition {
+        didSet { UserDefaults.standard.set(overlayPosition.rawValue, forKey: UserDefaultsKeys.overlayPosition) }
     }
 
     private let audioRecordingService: AudioRecordingService
@@ -161,8 +165,8 @@ final class DictationViewModel: ObservableObject {
         self.audioDuckingEnabled = UserDefaults.standard.bool(forKey: UserDefaultsKeys.audioDuckingEnabled)
         self.audioDuckingLevel = UserDefaults.standard.object(forKey: UserDefaultsKeys.audioDuckingLevel) as? Double ?? 0.2
         self.soundFeedbackEnabled = UserDefaults.standard.object(forKey: UserDefaultsKeys.soundFeedbackEnabled) as? Bool ?? true
-        self.overlayPosition = UserDefaults.standard.string(forKey: UserDefaultsKeys.overlayPosition)
-            .flatMap { OverlayPosition(rawValue: $0) } ?? .top
+        self.indicatorStyle = UserDefaults.standard.string(forKey: UserDefaultsKeys.indicatorStyle)
+            .flatMap { IndicatorStyle(rawValue: $0) } ?? .notch
         self.notchIndicatorVisibility = UserDefaults.standard.string(forKey: UserDefaultsKeys.notchIndicatorVisibility)
             .flatMap { NotchIndicatorVisibility(rawValue: $0) } ?? .duringActivity
         self.notchIndicatorLeftContent = UserDefaults.standard.string(forKey: UserDefaultsKeys.notchIndicatorLeftContent)
@@ -171,6 +175,8 @@ final class DictationViewModel: ObservableObject {
             .flatMap { NotchIndicatorContent(rawValue: $0) } ?? .waveform
         self.notchIndicatorDisplay = UserDefaults.standard.string(forKey: UserDefaultsKeys.notchIndicatorDisplay)
             .flatMap { NotchIndicatorDisplay(rawValue: $0) } ?? .activeScreen
+        self.overlayPosition = UserDefaults.standard.string(forKey: UserDefaultsKeys.overlayPosition)
+            .flatMap { OverlayPosition(rawValue: $0) } ?? .bottom
 
         setupBindings()
 

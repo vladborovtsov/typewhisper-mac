@@ -2,39 +2,11 @@ import AppKit
 import SwiftUI
 import Combine
 
-/// Observable notch geometry passed from the panel to the SwiftUI view.
-@MainActor
-final class NotchGeometry: ObservableObject {
-    @Published var notchWidth: CGFloat = 185
-    @Published var notchHeight: CGFloat = 38
-    @Published var hasNotch: Bool = false
-
-    func update(for screen: NSScreen) {
-        hasNotch = screen.safeAreaInsets.top > 0
-        if hasNotch,
-           let left = screen.auxiliaryTopLeftArea?.width,
-           let right = screen.auxiliaryTopRightArea?.width {
-            notchWidth = screen.frame.width - left - right + 4
-        } else {
-            notchWidth = 0
-        }
-        notchHeight = hasNotch ? screen.safeAreaInsets.top : 32
-    }
-}
-
-/// Hosting view that accepts first mouse click without requiring a prior activation click.
-private class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
-}
-
-/// Panel that visually extends the MacBook notch, centered over the hardware notch.
-/// Only shown on displays with a hardware notch - hidden on non-notch displays regardless of settings.
-class NotchIndicatorPanel: NSPanel {
-    /// Large enough to accommodate the expanded (open) state. SwiftUI clips the visible area.
+/// Floating panel for the Overlay Indicator mode.
+class OverlayIndicatorPanel: NSPanel {
     private static let panelWidth: CGFloat = 500
-    private static let panelHeight: CGFloat = 500
+    private static let panelHeight: CGFloat = 300
 
-    private let notchGeometry = NotchGeometry()
     private var cancellables = Set<AnyCancellable>()
     private var cachedScreen: NSScreen?
 
@@ -57,7 +29,8 @@ class NotchIndicatorPanel: NSPanel {
         hidesOnDeactivate = false
         ignoresMouseEvents = true
 
-        let hostingView = FirstMouseHostingView(rootView: NotchIndicatorView(geometry: notchGeometry))
+        let hostingView = NSHostingView(rootView: OverlayIndicatorView())
+        hostingView.sizingOptions = []
         contentView = hostingView
     }
 
@@ -88,10 +61,18 @@ class NotchIndicatorPanel: NSPanel {
                 self?.updateVisibility(state: vm.state, vm: vm)
             }
             .store(in: &cancellables)
+
+        vm.$overlayPosition
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, self.isVisible else { return }
+                self.show()
+            }
+            .store(in: &cancellables)
     }
 
     func updateVisibility(state: DictationViewModel.State, vm: DictationViewModel) {
-        guard vm.indicatorStyle == .notch else {
+        guard vm.indicatorStyle == .overlay else {
             dismiss()
             return
         }
@@ -111,8 +92,6 @@ class NotchIndicatorPanel: NSPanel {
         }
     }
 
-    // MARK: - Notch geometry
-
     func show() {
         let screen: NSScreen
         if let cached = cachedScreen, isVisible {
@@ -121,11 +100,18 @@ class NotchIndicatorPanel: NSPanel {
             screen = resolveScreen()
             cachedScreen = screen
         }
-        notchGeometry.update(for: screen)
 
-        let screenFrame = screen.frame
+        let screenFrame = screen.visibleFrame
         let x = screenFrame.midX - Self.panelWidth / 2
-        let y = screenFrame.origin.y + screenFrame.height - Self.panelHeight
+
+        let y: CGFloat
+        switch DictationViewModel.shared.overlayPosition {
+        case .bottom:
+            y = screenFrame.origin.y + 20
+        case .top:
+            // Position below menu bar area, like a taskbar
+            y = screenFrame.origin.y + screenFrame.height - Self.panelHeight - 20
+        }
 
         setFrame(NSRect(x: x, y: y, width: Self.panelWidth, height: Self.panelHeight), display: true)
         orderFrontRegardless()

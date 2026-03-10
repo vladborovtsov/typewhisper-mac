@@ -7,7 +7,7 @@ enum UserDefaultsKeys {
     static let audioDuckingEnabled = "audioDuckingEnabled"
     static let audioDuckingLevel = "audioDuckingLevel"
     static let soundFeedbackEnabled = "soundFeedbackEnabled"
-    static let overlayPosition = "overlayPosition"
+    static let indicatorStyle = "indicatorStyle"
 
     // MARK: - Hotkey (JSON-encoded UnifiedHotkey per slot)
     static let hybridHotkey = "hybridHotkey"
@@ -45,6 +45,7 @@ enum UserDefaultsKeys {
     static let historyRetentionDays = "historyRetentionDays"
 
     // MARK: - Notch Indicator
+    static let overlayPosition = "overlayPosition"
     static let notchIndicatorVisibility = "notchIndicatorVisibility"
     static let notchIndicatorLeftContent = "notchIndicatorLeftContent"
     static let notchIndicatorRightContent = "notchIndicatorRightContent"
