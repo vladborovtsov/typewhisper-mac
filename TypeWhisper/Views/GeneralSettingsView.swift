@@ -93,11 +93,13 @@ struct GeneralSettingsView: View {
             }
 
             Section(String(localized: "Indicator")) {
-                Picker(String(localized: "Style"), selection: $dictation.indicatorStyle) {
-                    Text(String(localized: "Notch")).tag(IndicatorStyle.notch)
-                    Text(String(localized: "Overlay")).tag(IndicatorStyle.overlay)
-                }
-                .pickerStyle(.segmented)
+                IndicatorPreviewView()
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+
+                IndicatorStylePicker()
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
 
                 Picker(String(localized: "Visibility"), selection: $dictation.notchIndicatorVisibility) {
                     Text(String(localized: "Always visible")).tag(NotchIndicatorVisibility.always)
@@ -105,17 +107,17 @@ struct GeneralSettingsView: View {
                     Text(String(localized: "Never")).tag(NotchIndicatorVisibility.never)
                 }
 
+                Picker(String(localized: "Display"), selection: $dictation.notchIndicatorDisplay) {
+                    Text(String(localized: "Active Screen")).tag(NotchIndicatorDisplay.activeScreen)
+                    Text(String(localized: "Primary Screen")).tag(NotchIndicatorDisplay.primaryScreen)
+                    Text(String(localized: "Built-in Display")).tag(NotchIndicatorDisplay.builtInScreen)
+                }
+
                 if dictation.indicatorStyle == .overlay {
                     Picker(String(localized: "Position"), selection: $dictation.overlayPosition) {
                         Text(String(localized: "Top")).tag(OverlayPosition.top)
                         Text(String(localized: "Bottom")).tag(OverlayPosition.bottom)
                     }
-                }
-
-                Picker(String(localized: "Display"), selection: $dictation.notchIndicatorDisplay) {
-                    Text(String(localized: "Active Screen")).tag(NotchIndicatorDisplay.activeScreen)
-                    Text(String(localized: "Primary Screen")).tag(NotchIndicatorDisplay.primaryScreen)
-                    Text(String(localized: "Built-in Display")).tag(NotchIndicatorDisplay.builtInScreen)
                 }
 
                 Picker(String(localized: "Left Side"), selection: $dictation.notchIndicatorLeftContent) {
