@@ -2375,6 +2375,16 @@
         }
       }
     },
+    "No transcriptions yet." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Transkriptionen."
+          }
+        }
+      }
+    },
     "No speech detected" : {
       "localizations" : {
         "de" : {
@@ -3083,6 +3093,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Erfordert einen laufenden API-Server. Das CLI-Tool verbindet sich mit TypeWhispers API fuer schnelle Transkription ohne Modell-Kaltstart."
+          }
+        }
+      }
+    },
+    "Recent Transcriptions" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letzte Transkriptionen"
           }
         }
       }

@@ -9,6 +9,7 @@ struct SettingsView: View {
     @State private var selectedTab: SettingsTab = .home
     @ObservedObject private var fileTranscription = FileTranscriptionViewModel.shared
     @ObservedObject private var registryService = PluginRegistryService.shared
+    @ObservedObject private var homeViewModel = HomeViewModel.shared
 
     var body: some View {
         Group {
@@ -59,6 +60,12 @@ struct SettingsView: View {
         .onAppear { navigateToFileTranscriptionIfNeeded() }
         .onChange(of: fileTranscription.showFilePickerFromMenu) { _, _ in
             navigateToFileTranscriptionIfNeeded()
+        }
+        .onChange(of: homeViewModel.navigateToHistory) { _, navigate in
+            if navigate {
+                selectedTab = .history
+                homeViewModel.navigateToHistory = false
+            }
         }
     }
 

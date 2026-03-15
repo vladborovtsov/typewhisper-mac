@@ -147,8 +147,8 @@ struct HistoryView: View {
             }
             .font(.caption)
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
             .background(.bar)
             .confirmationDialog(
                 String(localized: "Delete Entries"),

@@ -15,98 +15,141 @@ struct HomeSettingsView: View {
     }
 
     private var dashboardView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Time period picker
-                HStack {
-                    Text(String(localized: "Dashboard"))
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    Spacer()
-                    Picker("", selection: $viewModel.selectedTimePeriod) {
-                        ForEach(TimePeriod.allCases, id: \.self) { period in
-                            Text(period.displayName).tag(period)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 160)
-                }
-
-                // Permissions warning
-                if dictation.needsMicPermission || dictation.needsAccessibilityPermission {
-                    permissionsBanner
-                }
-
-                // Stats grid
-                statsGrid
-
-                // Activity chart
-                chartSection
-
-                // Run setup again
-                HStack {
-                    Spacer()
-                    Button {
-                        viewModel.resetSetupWizard()
-                    } label: {
-                        Label(String(localized: "Run setup again"), systemImage: "arrow.counterclockwise")
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
-                }
-
-                #if DEBUG
-                HStack(spacing: 8) {
-                    Spacer()
-                    Button("Seed Demo Data") {
-                        let historyService = ServiceContainer.shared.historyService
-                        historyService.seedDemoData()
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.orange)
-                    .font(.caption)
-                    Button("Clear All Data") {
-                        let historyService = ServiceContainer.shared.historyService
-                        historyService.clearAll()
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.red)
-                    .font(.caption)
-                }
-                #endif
+        VStack(alignment: .leading, spacing: 0) {
+            // Row 0: Permissions banner (outside scroll)
+            if dictation.needsMicPermission || dictation.needsAccessibilityPermission {
+                permissionsBanner
+                    .padding(.horizontal)
+                    .padding(.top)
             }
-            .padding()
+
+            // Header: Title + picker (outside scroll, always clickable)
+            HStack {
+                Text(String(localized: "Dashboard"))
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Spacer()
+                timePeriodPicker
+            }
+            .padding(.horizontal)
+            .padding(.top)
+            .padding(.bottom, 8)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    // Row 1: Stats grid
+                    statsGrid
+
+                    // Row 2: Activity chart
+                    chartSection
+
+                    // Row 3: Recent transcriptions
+                    recentTranscriptionsSection
+
+                    // Footer
+                    HStack {
+                        Spacer()
+                        Button {
+                            viewModel.resetSetupWizard()
+                        } label: {
+                            Label(String(localized: "Run setup again"), systemImage: "arrow.counterclockwise")
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                    }
+
+                    #if DEBUG
+                    HStack(spacing: 8) {
+                        Spacer()
+                        Button("Seed Demo Data") {
+                            let historyService = ServiceContainer.shared.historyService
+                            historyService.seedDemoData()
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.orange)
+                        .font(.caption)
+                        Button("Clear All Data") {
+                            let historyService = ServiceContainer.shared.historyService
+                            historyService.clearAll()
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                    }
+                    #endif
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
+            }
         }
         .frame(minWidth: 500, minHeight: 400)
     }
 
-    private var statsGrid: some View {
-        Grid(horizontalSpacing: 12, verticalSpacing: 12) {
-            GridRow {
-                StatCard(
-                    title: String(localized: "Words"),
-                    value: "\(viewModel.wordsCount)",
-                    systemImage: "text.word.spacing"
-                )
-                StatCard(
-                    title: String(localized: "Avg. WPM"),
-                    value: viewModel.averageWPM,
-                    systemImage: "speedometer"
-                )
-                StatCard(
-                    title: String(localized: "Apps Used"),
-                    value: "\(viewModel.appsUsed)",
-                    systemImage: "app.badge"
-                )
-                StatCard(
-                    title: String(localized: "Time Saved"),
-                    value: viewModel.timeSaved,
-                    systemImage: "clock.badge.checkmark"
-                )
+    // MARK: - Time Period Picker
+
+    private var timePeriodPicker: some View {
+        HStack(spacing: 2) {
+            periodButton(.week)
+            periodButton(.month)
+            periodButton(.allTime)
+        }
+        .padding(2)
+        .background(.quaternary.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    private func periodButton(_ period: TimePeriod) -> some View {
+        let isSelected = viewModel.selectedTimePeriod == period
+        return Text(period.displayName)
+            .font(.caption)
+            .fontWeight(isSelected ? .semibold : .regular)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(isSelected ? Color.accentColor : Color.clear)
+            .foregroundStyle(isSelected ? .white : .secondary)
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .contentShape(Rectangle())
+            .onTapGesture {
+                viewModel.selectedTimePeriod = period
             }
+    }
+
+    // MARK: - Stats Grid
+
+    private var statsGrid: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
+            StatCard(
+                title: String(localized: "Words"),
+                value: "\(viewModel.wordsCount)",
+                systemImage: "text.word.spacing",
+                trend: viewModel.wordsTrend
+            )
+            StatCard(
+                title: String(localized: "Avg. WPM"),
+                value: viewModel.averageWPM,
+                systemImage: "speedometer",
+                trend: viewModel.wpmTrend
+            )
+            StatCard(
+                title: String(localized: "Apps Used"),
+                value: "\(viewModel.appsUsed)",
+                systemImage: "app.badge",
+                trend: viewModel.appsTrend
+            )
+            StatCard(
+                title: String(localized: "Time Saved"),
+                value: viewModel.timeSaved,
+                systemImage: "clock.badge.checkmark",
+                trend: viewModel.timeSavedTrend
+            )
         }
     }
+
+    // MARK: - Chart
+
+    @State private var hoveredDate: Date?
+    @State private var hoverLocation: CGPoint = .zero
 
     private var chartSection: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -118,18 +161,60 @@ struct HomeSettingsView: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 200)
             } else {
-                Chart(viewModel.chartData) { point in
-                    BarMark(
-                        x: .value(String(localized: "Date"), point.date, unit: .day),
-                        y: .value(String(localized: "Words"), point.wordCount)
-                    )
-                    .foregroundStyle(.blue.gradient)
-                    .cornerRadius(4)
-                }
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: .day, count: viewModel.selectedTimePeriod == .week ? 1 : 5)) { value in
-                        AxisGridLine()
-                        AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                ZStack(alignment: .top) {
+                    Chart(viewModel.chartData) { point in
+                        BarMark(
+                            x: .value(String(localized: "Date"), point.date, unit: .day),
+                            y: .value(String(localized: "Words"), point.wordCount)
+                        )
+                        .foregroundStyle(
+                            hoveredDate != nil && Calendar.current.isDate(point.date, inSameDayAs: hoveredDate!)
+                                ? Color.blue
+                                : Color.blue.opacity(0.7)
+                        )
+                        .cornerRadius(4)
+                    }
+                    .chartXAxis {
+                        AxisMarks(values: .stride(by: .day, count: chartAxisStride)) { _ in
+                            AxisGridLine()
+                            AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                        }
+                    }
+                    .chartOverlay { proxy in
+                        GeometryReader { _ in
+                            Rectangle()
+                                .fill(.clear)
+                                .contentShape(Rectangle())
+                                .onContinuousHover { phase in
+                                    switch phase {
+                                    case .active(let location):
+                                        hoverLocation = location
+                                        if let date: Date = proxy.value(atX: location.x) {
+                                            hoveredDate = Calendar.current.startOfDay(for: date)
+                                        }
+                                    case .ended:
+                                        hoveredDate = nil
+                                    }
+                                }
+                        }
+                    }
+                    .id(viewModel.selectedTimePeriod)
+                    .overlay(alignment: .topLeading) {
+                        if let hoveredDate, let point = viewModel.chartData.first(where: { Calendar.current.isDate($0.date, inSameDayAs: hoveredDate) }), point.wordCount > 0 {
+                            VStack(spacing: 2) {
+                                Text("\(point.wordCount)")
+                                    .font(.caption.bold())
+                                    .monospacedDigit()
+                                Text(point.date.formatted(.dateTime.month(.abbreviated).day()))
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+                            .offset(x: max(0, hoverLocation.x - 30), y: max(0, hoverLocation.y - 50))
+                            .allowsHitTesting(false)
+                        }
                     }
                 }
                 .frame(height: 200)
@@ -139,6 +224,73 @@ struct HomeSettingsView: View {
         .background(.quaternary.opacity(0.3))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
+
+    private var chartAxisStride: Int {
+        switch viewModel.selectedTimePeriod {
+        case .week: return 1
+        case .month: return 5
+        case .allTime: return 7
+        }
+    }
+
+    // MARK: - Recent Transcriptions
+
+    private var recentTranscriptionsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(localized: "Recent Transcriptions"))
+                .font(.headline)
+
+            if viewModel.recentTranscriptions.isEmpty {
+                Text(String(localized: "No transcriptions yet."))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 60)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(viewModel.recentTranscriptions, id: \.id) { record in
+                        Button {
+                            viewModel.navigateToHistory = true
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(record.preview)
+                                        .lineLimit(1)
+                                        .font(.body)
+                                        .foregroundStyle(.primary)
+                                    HStack(spacing: 4) {
+                                        Text(record.timestamp, format: .relative(presentation: .named))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        if let appName = record.appName {
+                                            Text("- \(appName)")
+                                                .font(.caption)
+                                                .foregroundStyle(.tertiary)
+                                        }
+                                    }
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 4)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+
+                        if record.id != viewModel.recentTranscriptions.last?.id {
+                            Divider()
+                        }
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(.quaternary.opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    // MARK: - Permissions Banner
 
     private var permissionsBanner: some View {
         VStack(spacing: 8) {
@@ -178,10 +330,13 @@ struct HomeSettingsView: View {
     }
 }
 
+// MARK: - Stat Card
+
 private struct StatCard: View {
     let title: String
     let value: String
     let systemImage: String
+    var trend: Double? = nil
 
     var body: some View {
         VStack(spacing: 6) {
@@ -192,6 +347,9 @@ private struct StatCard: View {
                 .font(.title)
                 .fontWeight(.bold)
                 .monospacedDigit()
+            if let trend {
+                trendLabel(trend)
+            }
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -200,5 +358,19 @@ private struct StatCard: View {
         .padding(.vertical, 12)
         .background(.quaternary.opacity(0.3))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    @ViewBuilder
+    private func trendLabel(_ percent: Double) -> some View {
+        let isPositive = percent >= 0
+        let displayPercent = Int(abs(percent))
+        HStack(spacing: 2) {
+            Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
+                .font(.caption2)
+            Text("\(displayPercent)%")
+                .font(.caption2)
+                .monospacedDigit()
+        }
+        .foregroundStyle(isPositive ? .green : .red)
     }
 }

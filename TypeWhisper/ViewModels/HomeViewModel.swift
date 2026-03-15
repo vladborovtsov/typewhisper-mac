@@ -4,18 +4,21 @@ import Combine
 enum TimePeriod: String, CaseIterable {
     case week
     case month
+    case allTime
 
     var displayName: String {
         switch self {
         case .week: return String(localized: "Week")
         case .month: return String(localized: "Month")
+        case .allTime: return String(localized: "All Time")
         }
     }
 
-    var days: Int {
+    var days: Int? {
         switch self {
         case .week: return 7
         case .month: return 30
+        case .allTime: return nil
         }
     }
 }
@@ -42,6 +45,12 @@ final class HomeViewModel: ObservableObject {
     @Published var appsUsed: Int = 0
     @Published var timeSaved: String = "—"
     @Published var chartData: [ActivityDataPoint] = []
+    @Published var wordsTrend: Double? = nil
+    @Published var wpmTrend: Double? = nil
+    @Published var appsTrend: Double? = nil
+    @Published var timeSavedTrend: Double? = nil
+    @Published var recentTranscriptions: [TranscriptionRecord] = []
+    @Published var navigateToHistory = false
     @Published var showSetupWizard: Bool {
         didSet { UserDefaults.standard.set(!showSetupWizard, forKey: UserDefaultsKeys.setupWizardCompleted) }
     }
@@ -66,6 +75,7 @@ final class HomeViewModel: ObservableObject {
 
         $selectedTimePeriod
             .dropFirst()
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.refresh() }
             .store(in: &cancellables)
     }
@@ -80,35 +90,82 @@ final class HomeViewModel: ObservableObject {
     }
 
     func refresh() {
-        let cutoff = Calendar.current.date(byAdding: .day, value: -selectedTimePeriod.days, to: Date()) ?? Date()
-        let filtered = historyService.records.filter { $0.timestamp >= cutoff }
+        let now = Date()
+        let allRecords = historyService.records
 
-        // Words count
-        wordsCount = filtered.reduce(0) { $0 + $1.wordsCount }
-
-        // Average WPM
-        let totalMinutes = filtered.reduce(0.0) { $0 + $1.durationSeconds } / 60.0
-        if totalMinutes > 0 && wordsCount > 0 {
-            let wpm = Int(Double(wordsCount) / totalMinutes)
-            averageWPM = "\(wpm)"
+        // Filter records for current period
+        let filtered: [TranscriptionRecord]
+        if let days = selectedTimePeriod.days {
+            let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: now) ?? now
+            filtered = allRecords.filter { $0.timestamp >= cutoff }
         } else {
-            averageWPM = "—"
+            filtered = allRecords
         }
 
-        // Apps used
-        let uniqueApps = Set(filtered.compactMap { $0.appBundleIdentifier })
-        appsUsed = uniqueApps.count
+        // Stats for current period
+        let stats = computeStats(for: filtered)
+        wordsCount = stats.words
+        averageWPM = stats.wpm
+        appsUsed = stats.apps
+        timeSaved = stats.timeSaved
 
-        // Time saved (typing at 45 WPM baseline vs dictation duration)
-        let typingMinutes = Double(wordsCount) / 45.0
-        let dictationMinutes = totalMinutes
-        let savedMinutes = typingMinutes - dictationMinutes
-        if savedMinutes > 0 {
-            let mins = Int(savedMinutes)
+        // Trends (compare with previous period of same length)
+        if let days = selectedTimePeriod.days {
+            let currentCutoff = Calendar.current.date(byAdding: .day, value: -days, to: now) ?? now
+            let prevCutoff = Calendar.current.date(byAdding: .day, value: -days, to: currentCutoff) ?? currentCutoff
+            let prevFiltered = allRecords.filter { $0.timestamp >= prevCutoff && $0.timestamp < currentCutoff }
+            let prevStats = computeStats(for: prevFiltered)
+
+            wordsTrend = Self.trendPercent(current: Double(stats.words), previous: Double(prevStats.words))
+            appsTrend = Self.trendPercent(current: Double(stats.apps), previous: Double(prevStats.apps))
+            wpmTrend = Self.trendPercent(current: stats.rawWPM, previous: prevStats.rawWPM)
+            timeSavedTrend = Self.trendPercent(current: stats.rawSavedMinutes, previous: prevStats.rawSavedMinutes)
+        } else {
+            wordsTrend = nil
+            wpmTrend = nil
+            appsTrend = nil
+            timeSavedTrend = nil
+        }
+
+        // Chart data
+        chartData = buildChartData(records: filtered)
+
+        // Recent transcriptions
+        recentTranscriptions = Array(allRecords.prefix(3))
+    }
+
+    private struct PeriodStats {
+        let words: Int
+        let wpm: String
+        let rawWPM: Double
+        let apps: Int
+        let timeSaved: String
+        let rawSavedMinutes: Double
+    }
+
+    private func computeStats(for records: [TranscriptionRecord]) -> PeriodStats {
+        let words = records.reduce(0) { $0 + $1.wordsCount }
+        let totalMinutes = records.reduce(0.0) { $0 + $1.durationSeconds } / 60.0
+
+        let rawWPM: Double
+        let wpm: String
+        if totalMinutes > 0 && words > 0 {
+            rawWPM = Double(words) / totalMinutes
+            wpm = "\(Int(rawWPM))"
+        } else {
+            rawWPM = 0
+            wpm = "—"
+        }
+
+        let apps = Set(records.compactMap { $0.appBundleIdentifier }).count
+
+        let typingMinutes = Double(words) / 45.0
+        let rawSavedMinutes = typingMinutes - totalMinutes
+        let timeSaved: String
+        if rawSavedMinutes > 0 {
+            let mins = Int(rawSavedMinutes)
             if mins >= 60 {
-                let hours = mins / 60
-                let remainder = mins % 60
-                timeSaved = String(localized: "\(hours)h \(remainder)m")
+                timeSaved = String(localized: "\(mins / 60)h \(mins % 60)m")
             } else {
                 timeSaved = String(localized: "\(mins)m")
             }
@@ -116,15 +173,21 @@ final class HomeViewModel: ObservableObject {
             timeSaved = "—"
         }
 
-        // Chart data
-        chartData = buildChartData(records: filtered)
+        return PeriodStats(words: words, wpm: wpm, rawWPM: rawWPM, apps: apps, timeSaved: timeSaved, rawSavedMinutes: rawSavedMinutes)
+    }
 
+    nonisolated static func trendPercent(current: Double, previous: Double) -> Double? {
+        guard previous > 0 else { return nil }
+        return ((current - previous) / previous) * 100
     }
 
     private func buildChartData(records: [TranscriptionRecord]) -> [ActivityDataPoint] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let days = selectedTimePeriod.days
+        let days = selectedTimePeriod.days ?? max(1, {
+            guard let oldest = records.last?.timestamp else { return 30 }
+            return calendar.dateComponents([.day], from: oldest, to: today).day.map { $0 + 1 } ?? 30
+        }())
 
         var dataByDay: [Date: Int] = [:]
         for i in 0..<days {
