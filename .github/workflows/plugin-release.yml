@@ -47,15 +47,20 @@ jobs:
             livetranscript) TARGET="LiveTranscriptPlugin" ;;
             *) echo "Unknown plugin: $PLUGIN_NAME" && exit 1 ;;
           esac
-          # Set deployment target (SpeechAnalyzer requires macOS 26+)
+          # Set deployment target and Xcode version per plugin
+          # SpeechAnalyzer requires macOS 26+ APIs -> Xcode 26.2
+          # All others target macOS 14+ -> Xcode 16.2 (avoids libswiftCompatibilitySpan.dylib dependency)
           if [ "$TARGET" = "SpeechAnalyzerPlugin" ]; then
             DEPLOY_TARGET="26.0"
+            XCODE_VERSION="26.2"
           else
             DEPLOY_TARGET="14.0"
+            XCODE_VERSION="16.2"
           fi
           echo "TARGET=$TARGET" >> $GITHUB_ENV
           echo "DEPLOY_TARGET=$DEPLOY_TARGET" >> $GITHUB_ENV
-          echo "Target: $TARGET (macOS $DEPLOY_TARGET)"
+          echo "XCODE_VERSION=$XCODE_VERSION" >> $GITHUB_ENV
+          echo "Target: $TARGET (macOS $DEPLOY_TARGET, Xcode $XCODE_VERSION)"
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -63,7 +68,7 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "26.2"
+          xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Resolve Swift packages
         run: |
