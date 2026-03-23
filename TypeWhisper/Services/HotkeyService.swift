@@ -443,6 +443,7 @@ final class HotkeyService: ObservableObject {
         case down
         case up
         case repeatDown
+        case modifierRelease // Modifiers no longer match, but key is still physically down
     }
 
     /// Processes a key event against a hotkey, updating state booleans.
@@ -457,7 +458,7 @@ final class HotkeyService: ObservableObject {
 
         let value: Bool?
         switch result {
-        case .down, .repeatDown: value = true
+        case .down, .repeatDown, .modifierRelease: value = true
         case .up: value = false
         case .none: value = nil
         }
@@ -471,7 +472,7 @@ final class HotkeyService: ObservableObject {
         }
 
         let rawKeyDown = result == .down
-        let rawKeyUp = result == .up
+        let rawKeyUp = result == .up || result == .modifierRelease
         let isMatch = result != .none
 
         // For non-double-tap hotkeys, pass through directly
@@ -549,7 +550,12 @@ final class HotkeyService: ObservableObject {
             let current = event.modifierFlags.intersection(relevantMask)
             let allDown = current.contains(requiredFlags)
             if allDown, !modifierWasDown { return .down }
-            if !allDown, modifierWasDown { return .up }
+            if !allDown, modifierWasDown {
+                // If the sentinel keyCode (0xFFFF) is used, we have no physical key to track.
+                // Otherwise, we'd need to track which modifiers are still down.
+                // For now, modifier-only combos don't have a 'base key'.
+                return .up
+            }
             if allDown, modifierWasDown { return .repeatDown }
 
         case .keyWithModifiers:
@@ -560,11 +566,15 @@ final class HotkeyService: ObservableObject {
             if event.type == .keyDown, event.keyCode == hotkey.keyCode {
                 if currentRelevant == requiredFlags {
                     return keyWasDown ? .repeatDown : .down
+                } else if keyWasDown {
+                    return .repeatDown // Modifiers released but key held -> still ours
                 }
             } else if event.type == .keyUp, event.keyCode == hotkey.keyCode {
                 if keyWasDown { return .up }
-            } else if event.type == .flagsChanged, keyWasDown, !currentRelevant.contains(requiredFlags) {
-                return .up
+            } else if event.type == .flagsChanged, keyWasDown {
+                if !currentRelevant.contains(requiredFlags) {
+                    return .modifierRelease
+                }
             }
 
         case .bareKey:
