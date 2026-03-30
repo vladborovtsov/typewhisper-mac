@@ -126,6 +126,10 @@ class PromptActionsViewModel: ObservableObject {
         promptActionService.toggleAction(action)
     }
 
+    func moveAction(fromIndex: Int, toIndex: Int) {
+        promptActionService.moveAction(fromIndex: fromIndex, toIndex: toIndex)
+    }
+
     var availablePresets: [PromptAction] {
         promptActionService.availablePresets
     }
