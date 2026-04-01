@@ -30,6 +30,7 @@
 - Non-blocking model download
 - Dictionary JSON export and import
 - Parakeet V2/V3 model version selection
+- Media pause during recording (play music, start recording, verify pause, stop recording, verify resume)
 - Verify CLI and HTTP API locally
 - Upgrade from `1.0.0`
 
