@@ -15,7 +15,7 @@
       "size": 28721512,
       "downloadURL": "https://github.com/TypeWhisper/typewhisper-mac/releases/download/plugin-qwen3-v1.0.13/Qwen3Plugin.zip",
       "iconSystemName": "cpu",
-      "downloadCount": 4044
+      "downloadCount": 4058
     },
     {
       "id": "com.typewhisper.linear",
@@ -48,7 +48,7 @@
       "size": 206288,
       "downloadURL": "https://github.com/TypeWhisper/typewhisper-mac/releases/download/plugin-webhook-v1.0.6/WebhookPlugin.zip",
       "iconSystemName": "arrow.up.forward.app",
-      "downloadCount": 914
+      "downloadCount": 915
     },
     {
       "id": "com.typewhisper.groq",
@@ -65,7 +65,7 @@
       "downloadURL": "https://github.com/TypeWhisper/typewhisper-mac/releases/download/plugin-groq-v1.0.8/GroqPlugin.zip",
       "iconSystemName": "bolt.fill",
       "requiresAPIKey": true,
-      "downloadCount": 8800
+      "downloadCount": 8814
     },
     {
       "id": "com.typewhisper.openai",
@@ -82,7 +82,7 @@
       "downloadURL": "https://github.com/TypeWhisper/typewhisper-mac/releases/download/plugin-openai-v1.0.8/OpenAIPlugin.zip",
       "iconSystemName": "brain",
       "requiresAPIKey": true,
-      "downloadCount": 2571
+      "downloadCount": 2581
     },
     {
       "id": "com.typewhisper.gemini",
@@ -99,7 +99,7 @@
       "downloadURL": "https://github.com/TypeWhisper/typewhisper-mac/releases/download/plugin-gemini-v1.0.6/GeminiPlugin.zip",
       "iconSystemName": "sparkles",
       "requiresAPIKey": true,
-      "downloadCount": 1593
+      "downloadCount": 1596
     },
     {
       "id": "com.typewhisper.whisperkit",
@@ -115,7 +115,7 @@
       "size": 2956685,
       "downloadURL": "https://github.com/TypeWhisper/typewhisper-mac/releases/download/plugin-whisperkit-v1.0.13/WhisperKitPlugin.zip",
       "iconSystemName": "waveform",
-      "downloadCount": 12995
+      "downloadCount": 13023
     },
     {
       "id": "com.typewhisper.parakeet",
@@ -131,7 +131,7 @@
       "size": 4028976,
       "downloadURL": "https://github.com/TypeWhisper/typewhisper-mac/releases/download/plugin-parakeet-v1.0.11/ParakeetPlugin.zip",
       "iconSystemName": "bird",
-      "downloadCount": 33592
+      "downloadCount": 33687
     },
     {
       "id": "com.typewhisper.openai-compatible",
@@ -147,7 +147,7 @@
       "size": 181937,
       "downloadURL": "https://github.com/TypeWhisper/typewhisper-mac/releases/download/plugin-openai-compatible-v1.0.5/OpenAICompatiblePlugin.zip",
       "iconSystemName": "server.rack",
-      "downloadCount": 2995
+      "downloadCount": 3012
     },
     {
       "id": "com.typewhisper.speechanalyzer",
@@ -163,7 +163,7 @@
       "size": 178518,
       "downloadURL": "https://github.com/TypeWhisper/typewhisper-mac/releases/download/plugin-speechanalyzer-v1.0.9/SpeechAnalyzerPlugin.zip",
       "iconSystemName": "apple.logo",
-      "downloadCount": 8987
+      "downloadCount": 8990
     }
   ]
 }
